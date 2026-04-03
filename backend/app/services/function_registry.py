@@ -80,4 +80,17 @@ FUNCTION_SPECS: list[FunctionSpec] = [
             "required": ["node_id", "change_type"],
         },
     ),
+    FunctionSpec(
+        name="create_dependency",
+        description="Create dependency between tasks/events",
+        parameters={
+            "type": "object",
+            "properties": {
+                "parent_id": {"type": "string"},
+                "child_id": {"type": "string"},
+                "dependency_type": {"type": "string"},
+            },
+            "required": ["parent_id", "child_id"],
+        },
+    ),
 ]

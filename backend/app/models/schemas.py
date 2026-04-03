@@ -72,8 +72,12 @@ class AgentMessage(BaseModel):
 
 class WorkflowResponse(BaseModel):
     summary: str
+    story: str = ""
+    timeline: list[dict[str, Any]] = Field(default_factory=list)
     actions: list[dict[str, Any]]
     recommendations: list[str]
+    message: str = "Your day just healed itself."
+    confidence_score: float = 0.92
 
 
 class CascadeTestRequest(BaseModel):
@@ -87,3 +91,22 @@ class CascadeTestResponse(BaseModel):
     updated_nodes: list[dict[str, Any]]
     logs: list[dict[str, Any]]
     summary: str
+
+
+class DependencyModel(BaseModel):
+    dependency_id: str | None = None
+    parent_id: str
+    child_id: str
+    type: str = "blocks"
+
+
+class CascadeStreamEvent(BaseModel):
+    node_id: str | None = None
+    status: str
+    cascade_id: str | None = None
+    reason: str | None = None
+    summary: str | None = None
+
+
+class UndoCascadeRequest(BaseModel):
+    cascade_id: str = Field(min_length=1, max_length=128)

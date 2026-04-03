@@ -1,9 +1,20 @@
 from typing import Annotated
+import json
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 
-from app.core.security import TokenUser, create_access_token, get_current_user, require_roles
-from app.models.schemas import CascadeTestRequest, CascadeTestResponse, LoginRequest, WorkflowRequest, WorkflowResponse
+from app.core.security import TokenUser, create_access_token, get_current_user, parse_token, require_roles
+from app.models.schemas import (
+    CascadeStreamEvent,
+    CascadeTestRequest,
+    CascadeTestResponse,
+    DependencyModel,
+    LoginRequest,
+    UndoCascadeRequest,
+    WorkflowRequest,
+    WorkflowResponse,
+)
 from app.services.container import container
 from app.utils.sanitization import sanitize_text
 
@@ -80,6 +91,12 @@ async def add_dependency(
     return dependency
 
 
+@router.get("/dependencies", response_model=list[DependencyModel])
+async def list_dependencies(_user: Annotated[TokenUser, Depends(get_current_user)]) -> list[DependencyModel]:
+    deps = await container.repository.list_dependencies()
+    return [DependencyModel(**dep) for dep in deps]
+
+
 @router.post("/api/cascade/test", response_model=CascadeTestResponse)
 async def cascade_test(
     body: CascadeTestRequest,
@@ -92,3 +109,34 @@ async def cascade_test(
         payload=body.payload,
     )
     return CascadeTestResponse(**result)
+
+
+@router.post("/cascade/undo")
+async def undo_cascade(
+    body: UndoCascadeRequest,
+    user: Annotated[TokenUser, Depends(get_current_user)],
+) -> dict:
+    return await container.cascade_engine.undo_cascade(user.user_id, body.cascade_id)
+
+
+@router.get("/workflows/stream")
+async def stream_workflow_updates(
+    node_id: str,
+    change_type: str,
+    access_token: str,
+    payload_json: str | None = None,
+):
+    user = parse_token(access_token)
+    payload = json.loads(payload_json) if payload_json else {}
+
+    async def event_stream():
+        async for event in container.cascade_engine.cascade_update_stream(
+            user_id=user.user_id,
+            node_id=node_id,
+            change_type=change_type,
+            payload=payload,
+        ):
+            envelope = CascadeStreamEvent(**event)
+            yield f"event: update\ndata: {envelope.model_dump_json()}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")

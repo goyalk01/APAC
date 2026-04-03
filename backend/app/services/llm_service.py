@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from importlib import import_module
+import json
 from typing import Any
 
 from app.core.config import get_settings
@@ -113,4 +114,40 @@ class LLMService:
         return {
             "summary": "Max reasoning steps reached. Partial workflow completed.",
             "actions": actions,
+        }
+
+    async def generate_structured_output(self, prompt: str, context: dict[str, Any]) -> dict[str, Any]:
+        if not self.settings.google_cloud_project and self.settings.allow_local_function_call_stub:
+            return {
+                "start_time": context.get("change_payload", {}).get("new_start_time"),
+                "end_time": context.get("change_payload", {}).get("new_end_time"),
+                "reason": "Local stub scheduling decision",
+            }
+
+        if not self.settings.google_cloud_project:
+            raise RuntimeError("GOOGLE_CLOUD_PROJECT is required for Vertex AI structured output")
+
+        vertexai = import_module("vertexai")
+        generative_models = import_module("vertexai.generative_models")
+        init = getattr(vertexai, "init")
+        GenerativeModel = getattr(generative_models, "GenerativeModel")
+
+        init(project=self.settings.google_cloud_project, location=self.settings.google_cloud_location)
+        model = GenerativeModel(self.settings.vertex_model_name)
+
+        instruction = (
+            "Return only compact JSON with keys start_time, end_time, reason. "
+            "Pick next non-conflicting slot based on schedule context. "
+            f"Prompt: {prompt}\nContext: {json.dumps(context)}"
+        )
+        response = model.generate_content([instruction])
+        text = (response.text or "{}").strip()
+        if text.startswith("```"):
+            text = text.strip("`")
+            text = text.replace("json", "", 1).strip()
+        parsed = json.loads(text)
+        return {
+            "start_time": parsed.get("start_time"),
+            "end_time": parsed.get("end_time"),
+            "reason": parsed.get("reason", "LLM scheduling decision"),
         }

@@ -31,6 +31,24 @@ def create_access_token(user: TokenUser) -> str:
     return jwt.encode(payload, secret, algorithm=settings.jwt_algorithm)
 
 
+def parse_token(token: str) -> TokenUser:
+    settings = get_settings()
+    jwt = import_module("jose.jwt")
+    jwt_error_cls = getattr(import_module("jose"), "JWTError")
+    secret = settings.resolve_jwt_secret()
+
+    try:
+        payload = jwt.decode(token, secret, algorithms=[settings.jwt_algorithm])
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        role = payload.get("role", "user")
+        if not user_id or not email:
+            raise ValueError("Invalid token claims")
+        return TokenUser(user_id=user_id, email=email, role=role)
+    except (jwt_error_cls, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials") from exc
+
+
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> TokenUser:
     settings = get_settings()
     jwt = import_module("jose.jwt")

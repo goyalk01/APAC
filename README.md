@@ -1,9 +1,47 @@
-# Multi-Agent AI Productivity System (Google Cloud Gen AI Hackathon)
+# CASCADE - AI-Powered Self-Healing Workflow Engine
 
-Production-ready, MCP-based multi-agent architecture using FastAPI, Vertex AI Gemini function calling, Firestore state, and Cloud Run deployment.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Production-009688)](https://fastapi.tiangolo.com/)
+[![Google Cloud Run](https://img.shields.io/badge/Cloud%20Run-Ready-4285F4)](https://cloud.google.com/run)
+[![Vertex AI](https://img.shields.io/badge/Vertex%20AI-Gemini-orange)](https://cloud.google.com/vertex-ai)
+[![MCP](https://img.shields.io/badge/MCP-Integrated-6f42c1)](https://modelcontextprotocol.io/)
 
-## Architecture
+CASCADE is a production-grade multi-agent AI system that models work as a dependency graph and auto-heals workflows when disruptions occur.
+It combines Vertex AI function-calling, MCP tool execution, and DAG-based cascade logic to keep tasks, schedules, and notes synchronized in real time.
 
+## 1. Demo Preview
+When a user changes one event, CASCADE automatically updates dependent items and explains the reasoning.
+
+Example input:
+```text
+Move my 10 AM meeting to 3 PM
+```
+
+Example output:
+```text
+Meeting updated to 3 PM.
+4 dependent items adjusted.
+Your day just healed itself.
+```
+
+## 2. Core Idea
+Traditional productivity tools treat updates as isolated operations. CASCADE treats work as a connected system.
+
+Problem solved:
+- One schedule change often breaks multiple downstream tasks.
+- Users manually repair calendars, tasks, and notes.
+
+What makes CASCADE unique:
+- Dependency-aware DAG model across tasks and events.
+- AI-driven cascade decisions using Gemini instead of fixed rules only.
+- Real-time visual ripple updates via SSE + React Flow.
+
+Why it is better than traditional systems:
+- It does not stop at execution; it adapts the entire workflow.
+- It gives explainable outcomes, timelines, and recommendations.
+- It is deployable, observable, and production-ready.
+
+## 3. Architecture
 ```mermaid
 flowchart TB
   UI[Next.js Chat UI] --> API[FastAPI Orchestrator on Cloud Run]
@@ -20,244 +58,208 @@ flowchart TB
   API --> LOG[Structured Logs + AgentLogs]
 ```
 
-### Core design choices
-- No string-matching routing for intents.
-- Gemini decides tool selection via function calling schemas.
-- Backend orchestrator only executes model-declared tools over MCP.
-- Firestore stores user data and workflow memory.
-- Security includes JWT, RBAC, prompt injection filtering, and per-IP rate limiting.
+Component explanation:
+- UI: Chat + DAG visualization for user interaction and ripple feedback.
+- API: FastAPI orchestrator that coordinates agents and workflows.
+- Vertex AI: Gemini decides tool calls and multi-step reasoning.
+- ReAct Loop: Iterative think-act-observe loop for complex workflows.
+- MCP: Standardized tool execution interface for calendar, tasks, notes.
+- Firestore: Source of truth for state, memory, dependencies, and logs.
+- Logs: Structured telemetry for observability and explainability.
 
-## Folder Structure
+## 4. Features
+- Multi-Agent AI system with orchestrator + specialist agents.
+- DAG-based dependency engine for parent-child workflow edges.
+- Cascade ripple updates with recursive propagation.
+- AI-driven scheduling decisions for non-conflicting updates.
+- Real-time SSE updates for live progress visualization.
+- Undo mechanism for cascade rollback.
+- Story mode explanations for human-readable impact summaries.
+- Timeline visualization of step-by-step cascade actions.
+- MCP tool integration for portable and extensible tool calls.
 
+## 5. How It Works
+1. User sends a natural-language request.
+2. Orchestrator invokes Gemini function-calling.
+3. Gemini selects tool actions.
+4. Orchestrator calls MCP tools.
+5. State is persisted in Firestore.
+6. Dependency engine resolves impacted nodes.
+7. Cascade engine propagates updates recursively.
+8. SSE streams progress to UI.
+9. UI animates ripple timeline on graph.
+
+## 6. Tech Stack
+| Layer | Tech |
+| ----- | ---- |
+| Frontend | Next.js, React, React Flow |
+| API | FastAPI, Pydantic |
+| Agent Intelligence | Vertex AI Gemini Function Calling, ReAct Loop |
+| Tool Protocol | Model Context Protocol (MCP), JSON-RPC |
+| Data Layer | Firestore |
+| Streaming | Server-Sent Events (SSE) |
+| Deployment | Docker, Cloud Run, Artifact Registry |
+| Security | JWT, RBAC, Secret Manager |
+| Testing | Pytest |
+
+## 7. Project Structure
 ```text
 backend/
   app/
-    main.py
-    config/
-      __init__.py
-    routes/
-      __init__.py
-    api/
-      routes.py
     agents/
-      orchestrator.py
-      tool_router.py
-      task_agent.py
-      calendar_agent.py
-      notes_agent.py
-      base.py
-    services/
-      llm_service.py
-      function_registry.py
-      container.py
-    mcp_client/
-      client.py
-    db/
-      repositories.py
-      firestore_repository.py
-    models/
-      schemas.py
+    api/
     core/
-      config.py
-      security.py
-      logging_config.py
+    db/
+    mcp_client/
     middleware/
-      rate_limit.py
+    models/
+    services/
     utils/
-      sanitization.py
+    main.py
   tests/
-    test_orchestrator.py
-    test_api_workflow.py
-  requirements.txt
-  Dockerfile
-
-mcp-server/
-  server.py
-  tools/
-    calendar.py
-    tasks.py
-    notes.py
-    firestore_store.py
   requirements.txt
   Dockerfile
 
 frontend/
   app/
-    layout.tsx
     page.tsx
     globals.css
+    layout.tsx
   package.json
+
+mcp-server/
+  tools/
+  server.py
+  requirements.txt
+  Dockerfile
 ```
 
-## Backend Runtime
-
-### Local backend run
+## 8. Local Setup
+### Backend
 ```bash
 cd backend
 python -m venv .venv
-# Windows:
+# Windows PowerShell
 .venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
 uvicorn app.main:app --host 0.0.0.0 --port 8080
 ```
 
-### Local MCP server run
+### MCP Server
 ```bash
 cd mcp-server
 python -m venv .venv
+# Windows PowerShell
 .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn server:app --host 0.0.0.0 --port 9000
 ```
 
-## Vertex AI Function Calling + ReAct Loop
-
-Implemented in backend/app/services/llm_service.py:
-- Declares function schemas for:
-  - create_calendar_event
-  - manage_tasks
-  - create_note
-- Calls Gemini through Vertex AI.
-- Detects function calls.
-- Calls MCP server.
-- Feeds tool results back to model.
-- Repeats until final answer or max step cap.
-
-## Firestore Collections
-
-- Users
-- Tasks
-- Events
-- Notes
-- Conversations
-- AgentLogs
-- SessionContext
-
-### Memory behavior
-- Conversation history persisted each turn.
-- SessionContext stores last summary and recent actions.
-- AgentLogs store tool decisions and outcomes.
-
-## Security
-
-- JWT access token and role claims.
-- RBAC guard on admin logs endpoint.
-- Prompt injection detection gate.
-- Pydantic input validation.
-- Rate limiting middleware.
-- Secret Manager integration for JWT secret in production.
-
-## API Endpoints
-
-- POST /v1/auth/token
-- POST /v1/workflows/execute
-- GET /v1/me/tasks
-- GET /v1/me/events
-- GET /v1/me/notes
-- GET /v1/admin/agent-logs
-
-### Example request
+### Frontend
 ```bash
-curl -X POST http://localhost:8080/v1/auth/token \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"u1","email":"u1@example.com","role":"user"}'
+cd frontend
+npm install
+npm run dev
 ```
 
+## 9. Environment Variables
+Backend and MCP services use environment variables for runtime configuration.
+
+Required:
+- GOOGLE_CLOUD_PROJECT: Google Cloud project ID.
+- FIRESTORE_DATABASE: Firestore DB name, default is (default).
+- MCP_SERVER_URL: MCP server base URL used by orchestrator.
+- JWT_SECRET: Local/dev JWT secret.
+
+Production recommendation:
+- Store secrets in Secret Manager and inject through Cloud Run.
+
+## 10. Cloud Run Deployment
+### 1) Enable required APIs
 ```bash
-curl -X POST http://localhost:8080/v1/workflows/execute \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"message":"Schedule meeting tomorrow and create notes"}'
+gcloud services enable \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  aiplatform.googleapis.com \
+  firestore.googleapis.com \
+  secretmanager.googleapis.com
 ```
 
-## Cloud Run Deployment
-
-### 1. Enable APIs
+### 2) Create Artifact Registry repository
 ```bash
-gcloud services enable run.googleapis.com artifactregistry.googleapis.com \
-  aiplatform.googleapis.com secretmanager.googleapis.com firestore.googleapis.com cloudbuild.googleapis.com
+gcloud artifacts repositories create cascade-repo \
+  --repository-format=docker \
+  --location=us-central1
 ```
 
-### 2. Create service account
-```bash
-gcloud iam service-accounts create productivity-agent-sa \
-  --display-name="Productivity Agent SA"
-```
-
-### 3. Grant IAM roles
-```bash
-gcloud projects add-iam-policy-binding <PROJECT_ID> \
-  --member="serviceAccount:productivity-agent-sa@<PROJECT_ID>.iam.gserviceaccount.com" \
-  --role="roles/aiplatform.user"
-
-gcloud projects add-iam-policy-binding <PROJECT_ID> \
-  --member="serviceAccount:productivity-agent-sa@<PROJECT_ID>.iam.gserviceaccount.com" \
-  --role="roles/datastore.user"
-
-gcloud projects add-iam-policy-binding <PROJECT_ID> \
-  --member="serviceAccount:productivity-agent-sa@<PROJECT_ID>.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
-```
-
-### 4. Create Artifact Registry
-```bash
-gcloud artifacts repositories create productivity-repo \
-  --repository-format=docker --location=us-central1
-```
-
-### 5. Build and push backend image
+### 3) Build and push backend image
 ```bash
 cd backend
-gcloud builds submit --tag us-central1-docker.pkg.dev/<PROJECT_ID>/productivity-repo/backend:latest
+gcloud builds submit \
+  --tag us-central1-docker.pkg.dev/<PROJECT_ID>/cascade-repo/backend:latest
 ```
 
-### 6. Deploy backend to Cloud Run
+### 4) Deploy backend to Cloud Run
 ```bash
-gcloud run deploy productivity-backend \
-  --image us-central1-docker.pkg.dev/<PROJECT_ID>/productivity-repo/backend:latest \
+gcloud run deploy cascade-backend \
+  --image us-central1-docker.pkg.dev/<PROJECT_ID>/cascade-repo/backend:latest \
   --region us-central1 \
-  --service-account productivity-agent-sa@<PROJECT_ID>.iam.gserviceaccount.com \
-  --set-env-vars GOOGLE_CLOUD_PROJECT=<PROJECT_ID>,GOOGLE_CLOUD_LOCATION=us-central1,VERTEX_MODEL_NAME=gemini-1.5-pro-002,MCP_SERVER_URL=https://<MCP_URL>,ENABLE_FIRESTORE=true,ENVIRONMENT=prod,JWT_SECRET_SECRET_NAME=multi-agent-jwt-secret \
-  --allow-unauthenticated
+  --platform managed \
+  --allow-unauthenticated \
+  --set-env-vars GOOGLE_CLOUD_PROJECT=<PROJECT_ID>,MCP_SERVER_URL=https://<MCP_SERVICE_URL>,ENABLE_FIRESTORE=true
 ```
 
-### 7. Build and deploy MCP server
+### 5) Build and push MCP image
 ```bash
 cd ../mcp-server
-gcloud builds submit --tag us-central1-docker.pkg.dev/<PROJECT_ID>/productivity-repo/mcp:latest
-
-gcloud run deploy productivity-mcp \
-  --image us-central1-docker.pkg.dev/<PROJECT_ID>/productivity-repo/mcp:latest \
-  --region us-central1 \
-  --service-account productivity-agent-sa@<PROJECT_ID>.iam.gserviceaccount.com \
-  --set-env-vars GOOGLE_CLOUD_PROJECT=<PROJECT_ID>,FIRESTORE_DATABASE=(default) \
-  --allow-unauthenticated
+gcloud builds submit \
+  --tag us-central1-docker.pkg.dev/<PROJECT_ID>/cascade-repo/mcp:latest
 ```
 
-## Tests
-
+### 6) Deploy MCP server to Cloud Run
 ```bash
-cd backend
-python -m pytest -q
+gcloud run deploy cascade-mcp \
+  --image us-central1-docker.pkg.dev/<PROJECT_ID>/cascade-repo/mcp:latest \
+  --region us-central1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --set-env-vars GOOGLE_CLOUD_PROJECT=<PROJECT_ID>,FIRESTORE_DATABASE=(default)
 ```
 
-- Unit test: orchestrator multi-step coordination.
-- Integration test: auth + workflow endpoint flow.
+## 11. Demo Script
+1. Open dashboard and say: Let us simulate real-life chaos.
+2. Submit: Move my 10 AM meeting to 3 PM.
+3. Show graph ripple updates in real time.
+4. Show timeline steps and story mode explanation.
+5. Show recommendations and final line: Your day just healed itself.
 
-## Demo Workflows
+## 12. Sample Output
+```json
+{
+  "summary": "Cascade completed with dependent updates.",
+  "story": "Your schedule was automatically optimized using dependency-aware AI.",
+  "timeline": [
+    {"step": 1, "node": "event_123", "action": "update_calendar_event"},
+    {"step": 2, "node": "task_456", "action": "manage_tasks"}
+  ],
+  "recommendations": [
+    "You have high task density after 3 PM - consider redistributing workload.",
+    "This change may reduce your focus window - schedule a buffer period."
+  ],
+  "message": "Your day just healed itself."
+}
+```
 
-### Example 1
-Input: "Schedule meeting tomorrow and create notes"
-- Gemini emits function call: create_calendar_event
-- Orchestrator calls MCP
-- Gemini emits function call: create_note
-- Orchestrator calls MCP
-- Data persisted in Events/Notes/Conversations/AgentLogs
-- Final summary returned
+## 13. Why This Project Stands Out
+- Real AI reasoning with function-calling and contextual scheduling decisions.
+- Not a static rules engine; it adapts with dependency-aware cascades.
+- Production-grade architecture with MCP, Firestore, SSE, and Cloud Run.
+- Strong visual and interactive UX with graph ripple behavior.
 
-### Example 2
-Input: "Plan my day"
-- Gemini can emit sequence: manage_tasks, create_calendar_event, create_note
-- ReAct loop executes each tool call step-by-step
-- Session context updated for follow-up prompts
+## 14. Future Improvements
+- Multi-user collaborative dependency editing.
+- Calendar conflict simulation sandbox.
+- Policy-based business constraints for enterprise teams.
+- Advanced confidence calibration and risk alerts.

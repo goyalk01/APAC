@@ -34,7 +34,21 @@ async def test_cascade_propagation_and_explainable_logging():
     await dependency_engine.add_dependency("event_123", "task_456", "blocks")
 
     mcp_client = MCPToolClient("http://localhost:9000")
-    cascade_engine = CascadeEngine(repository=repo, dependency_engine=dependency_engine, mcp_client=mcp_client)
+
+    class FakeCascadeLLMService:
+        async def generate_structured_output(self, prompt, context):
+            return {
+                "start_time": context["change_payload"].get("new_start_time"),
+                "end_time": "2026-04-03T16:00:00+00:00",
+                "reason": "rescheduled for conflict-free slot",
+            }
+
+    cascade_engine = CascadeEngine(
+        repository=repo,
+        dependency_engine=dependency_engine,
+        mcp_client=mcp_client,
+        llm_service=FakeCascadeLLMService(),
+    )
 
     result = await cascade_engine.cascade_update(
         user_id="u1",

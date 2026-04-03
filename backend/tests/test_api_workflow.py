@@ -14,8 +14,12 @@ def test_auth_and_workflow_roundtrip():
     async def fake_execute(user_id: str, message: str):
         return {
             "summary": f"Executed for {user_id}",
+            "story": "test story",
+            "timeline": [{"step": 1, "node": "task_1", "action": "manage_tasks"}],
             "actions": [{"tool": "create_note", "result": {"status": "success"}}],
             "recommendations": ["ok"],
+            "message": "Your day just healed itself.",
+            "confidence_score": 0.92,
         }
 
     container.orchestrator.execute = fake_execute

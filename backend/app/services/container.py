@@ -32,7 +32,12 @@ class ServiceContainer:
         notes_agent = NotesAgent(repository, mcp_client)
         tool_router = ToolRouter(task_agent=task_agent, calendar_agent=calendar_agent, notes_agent=notes_agent)
         dependency_engine = DependencyEngine(repository)
-        cascade_engine = CascadeEngine(repository=repository, dependency_engine=dependency_engine, mcp_client=mcp_client)
+        cascade_engine = CascadeEngine(
+            repository=repository,
+            dependency_engine=dependency_engine,
+            mcp_client=mcp_client,
+            llm_service=self.llm_service,
+        )
 
         self.dependency_engine = dependency_engine
         self.cascade_engine = cascade_engine
@@ -42,6 +47,7 @@ class ServiceContainer:
             llm_service=self.llm_service,
             tool_router=tool_router,
             cascade_engine=cascade_engine,
+            dependency_engine=dependency_engine,
         )
 
 

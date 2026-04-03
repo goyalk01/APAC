@@ -125,6 +125,22 @@ class FirestoreRepository(Repository):
         docs = [doc async for doc in query.stream()]
         return [doc.to_dict() for doc in docs]
 
+    async def list_dependencies(self) -> list[dict[str, Any]]:
+        docs = [doc async for doc in self.client.collection("dependencies").stream()]
+        return [doc.to_dict() for doc in docs]
+
+    async def get_task(self, task_id: str) -> dict[str, Any] | None:
+        snapshot = await self.client.collection("tasks").document(task_id).get()
+        if not snapshot.exists:
+            return None
+        return snapshot.to_dict()
+
+    async def get_event(self, event_id: str) -> dict[str, Any] | None:
+        snapshot = await self.client.collection("events").document(event_id).get()
+        if not snapshot.exists:
+            return None
+        return snapshot.to_dict()
+
 
 def build_repository(enable_firestore: bool, project: str, database: str) -> Repository:
     if enable_firestore and project:

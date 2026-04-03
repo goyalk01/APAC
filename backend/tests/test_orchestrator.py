@@ -45,13 +45,28 @@ async def test_orchestrator_executes_multi_agent_workflow():
         notes_agent=NotesAgent(repo, mcp_client),
     )
     dependency_engine = DependencyEngine(repo)
-    cascade_engine = CascadeEngine(repository=repo, dependency_engine=dependency_engine, mcp_client=mcp_client)
+
+    class FakeCascadeLLMService:
+        async def generate_structured_output(self, prompt, context):
+            return {
+                "start_time": "2026-04-03T15:00:00+00:00",
+                "end_time": "2026-04-03T16:00:00+00:00",
+                "reason": "test",
+            }
+
+    cascade_engine = CascadeEngine(
+        repository=repo,
+        dependency_engine=dependency_engine,
+        mcp_client=mcp_client,
+        llm_service=FakeCascadeLLMService(),
+    )
 
     orchestrator = OrchestratorAgent(
         repository=repo,
         llm_service=FakeLLMService(),
         tool_router=tool_router,
         cascade_engine=cascade_engine,
+        dependency_engine=dependency_engine,
     )
 
     result = await orchestrator.execute("u1", "Schedule meeting tomorrow and prepare notes")

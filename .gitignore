@@ -1,18 +1,9 @@
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
 # Python
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
 *.pyd
+*.py[cod]
 *.so
 *.egg-info/
 .eggs/
@@ -22,31 +13,24 @@ __pycache__/
 .coverage
 coverage.xml
 htmlcov/
-
-# Virtual environments
-.venv/
+.env
+.env.*
+!.env.example
 venv/
+.venv/
 env/
 backend/.venv/
 mcp-server/.venv/
 
-# Environment/secrets
-.env
-.env.*
-!.env.example
-backend/.env
-backend/.env.*
-!backend/.env.example
-mcp-server/.env
-mcp-server/.env.*
-frontend/.env
-frontend/.env.*
-
-# Node / Next.js
+# Node
 node_modules/
 frontend/node_modules/
 .next/
 out/
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
@@ -55,15 +39,28 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Build / artifacts
+# Build
 dist/
 build/
-*.tar
-*.gz
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Tooling caches
 .cache/
 .parcel-cache/
+
+# Scoped env overrides
+backend/.env
+backend/.env.*
+!backend/.env.example
+mcp-server/.env
+mcp-server/.env.*
+frontend/.env
+frontend/.env.*
 
 # Local test artifacts
 backend/.pytest_cache/

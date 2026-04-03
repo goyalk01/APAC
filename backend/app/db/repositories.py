@@ -35,6 +35,9 @@ class Repository(Protocol):
     async def add_dependency(self, parent_id: str, child_id: str, relation_type: str) -> dict[str, Any]: ...
     async def get_dependents(self, node_id: str) -> list[dict[str, Any]]: ...
     async def get_dependencies(self, node_id: str) -> list[dict[str, Any]]: ...
+    async def list_dependencies(self) -> list[dict[str, Any]]: ...
+    async def get_task(self, task_id: str) -> dict[str, Any] | None: ...
+    async def get_event(self, event_id: str) -> dict[str, Any] | None: ...
 
 
 class InMemoryRepository:
@@ -138,3 +141,12 @@ class InMemoryRepository:
 
     async def get_dependencies(self, node_id: str) -> list[dict[str, Any]]:
         return [dep for dep in self.store.dependencies.values() if dep.get("child_id") == node_id]
+
+    async def list_dependencies(self) -> list[dict[str, Any]]:
+        return list(self.store.dependencies.values())
+
+    async def get_task(self, task_id: str) -> dict[str, Any] | None:
+        return self.store.tasks.get(task_id)
+
+    async def get_event(self, event_id: str) -> dict[str, Any] | None:
+        return self.store.events.get(event_id)
